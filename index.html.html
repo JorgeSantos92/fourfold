@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Four Fold 🍀 Predictor Pro</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0a; --bg-panel: #161616; --brand-green: #008542;
+            --brand-yellow: #ffdf1b; --text-gray: #888; --loss-red: #ff4444;
+            --win-green: #00ff88;
+            --bar-green: #115340;
+            --gradient-dark: #0a0a0a;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: white; margin: 0; overflow-x: hidden; }
+        .hidden { display: none !important; }
+        
+        #login-overlay { position: fixed; inset: 0; background: var(--bg-dark); z-index: 5000; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: var(--bg-panel); padding: 40px; border-radius: 12px; border-top: 4px solid var(--brand-green); width: 320px; text-align: center; }
+        .login-card h2 { color: var(--brand-yellow); margin-bottom: 20px; }
+
+        .top-bar { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px 20px;
+            background: linear-gradient(to right, var(--gradient-dark), var(--bar-green));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
+            position: sticky; top: 0; z-index: 1000; height: 50px;
+        }
+        .top-left { display: flex; align-items: center; gap: 30px; }
+        .logo-img { height: 35px; cursor: pointer; border-radius: 4px; }
+        
+        .nav-links { display: flex; gap: 20px; }
+        .nav-item { 
+            background: none; border: none; color: #ccc; 
+            font-size: 13px; font-weight: 600; cursor: pointer; padding: 5px 0;
+            transition: 0.3s;
+        }
+        .nav-item:hover { color: white; }
+        .nav-item.active { color: var(--win-green); border-bottom: 2px solid var(--win-green); }
+
+        .top-right { display: flex; align-items: center; gap: 25px; }
+        .greeting { font-size: 13px; color: #ccc; }
+        .greeting strong { color: white; }
+
+        .bankroll-pill {
+            background: rgba(0, 0, 0, 0.4); 
+            padding: 4px 12px; border-radius: 20px;
+            display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .bankroll-val { font-weight: bold; color: var(--brand-yellow); font-size: 14px; }
+        .plus-btn { 
+            background: rgba(255, 255, 255, 0.1); border: none; color: white; width: 20px; height: 20px; 
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; 
+            justify-content: center; font-size: 14px;
+        }
+
+        .container { padding: 20px; max-width: 1100px; margin: auto; }
+        .panel { background: var(--bg-panel); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #222; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #1a1a1a; padding: 20px; text-align: center; border-bottom: 3px solid var(--brand-green); }
+        .stat-card h4 { margin: 0; font-size: 10px; color: var(--text-gray); text-transform: uppercase; }
+        .stat-card p { margin: 10px 0 0; font-size: 24px; font-weight: bold; }
+
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .cal-cell { background: #1a1a1a; aspect-ratio: 1/1; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #222; position: relative;}
+        .cal-day-label { text-align: center; font-size: 10px; color: var(--text-gray); font-weight: bold; padding-bottom: 5px; }
+        .win-day { border: 1px solid var(--win-green); background: rgba(0, 255, 136, 0.05); }
+        .loss-day { border: 1px solid var(--loss-red); background: rgba(255, 68, 68, 0.05); }
+
+        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        select, input { width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #333; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px;}
+        .btn-calc { background: var(--brand-yellow); color: black; font-weight: bold; border: none; padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 14px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { color: var(--text-gray); font-size: 10px; text-align: center; padding: 10px; border-bottom: 2px solid #222; }
+        td { padding: 12px 8px; border-bottom: 1px solid #222; text-align: center; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div id="login-overlay" class="hidden">
+    <div class="login-card">
+        <h2>🍀 Welcome</h2>
+        <input type="text" id="user-name-input" placeholder="Full Name">
+        <input type="number" id="init-bank-input" placeholder="Starting Bankroll ($)">
+        <button class="btn-calc" onclick="handleLogin()">Start Betting</button>
+    </div>
+</div>
+
+<div class="top-bar">
+    <div class="top-left">
+        <img src="logo.PNG" class="logo-img" onclick="tab('dash')" alt="FF Logo">
+        <div class="nav-links">
+            <button class="nav-item active" id="btn-dash" onclick="tab('dash')">Dashboard</button>
+            <button class="nav-item" id="btn-pred" onclick="tab('pred')">Predictor</button>
+            <button class="nav-item" id="btn-arch" onclick="tab('arch')">Archive</button>
+        </div>
+    </div>
+    
+    <div class="top-right">
+        <div class="greeting" id="user-greeting">Welcome, <strong>User</strong></div>
+        <div class="bankroll-pill">
+            <span class="bankroll-val" id="s-top-bank">$0.00</span>
+            <button class="plus-btn" onclick="promptBankroll()">+</button>
+        </div>
+        <button onclick="logout()" style="background:none; border:none; color:white; opacity:0.5; font-size:10px; cursor:pointer;">Logout</button>
+    </div>
+</div>
+
+<div class="container">
+    <div id="dash-page" class="tab-content">
+        <div class="stats-grid">
+            <div class="stat-card"><h4>Net Profit</h4><p id="s-prof" class="win-green">$0.00</p></div>
+            <div class="stat-card"><h4>Yield (ROI)</h4><p id="s-roi">0%</p></div>
+            <div class="stat-card"><h4>Win Rate</h4><p id="s-wr">0%</p></div>
+        </div>
+
+        <div class="panel">
+            <div class="cal-header">
+                <button onclick="changeMonth(-1)" style="background:none; border:none; color:var(--brand-yellow); cursor:pointer">◀</button>
+                <h3 id="cal-month-title" style="margin:0; font-size:16px;">Month Year</h3>
+                <button onclick="changeMonth(1)" style="background:none; border:none; color:var(--brand-yellow); cursor:pointer">▶</button>
+            </div>
+            <div class="cal-grid" id="calendar-body"></div>
+        </div>
+    </div>
+
+    <div id="pred-page" class="tab-content hidden">
+        <div class="panel">
+            <div class="input-row">
+                <select id="in-league" onchange="loadTeams()"><option>Loading Leagues...</option></select>
+                <select id="in-home"><option>Select Home</option></select>
+                <select id="in-away"><option>Select Away</option></select>
+            </div>
+            <button class="btn-calc" onclick="runPredictor()">GENERATE PREDICTIONS</button>
+            <div id="status-bar" style="text-align:center; margin-top:10px; font-size:12px; color:var(--brand-yellow); display:none">⚙️ Syncing Google Sheet...</div>
+            
+            <table>
+                <thead>
+                    <tr><th>Market</th><th>Prob%</th><th>xOdds</th><th>Bookie</th><th>Value</th><th>Strategy</th><th>Stake</th><th></th></tr>
+                </thead>
+                <tbody id="match-results"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="arch-page" class="tab-content hidden">
+        <div class="panel">
+            <table id="arch-table">
+                <thead>
+                    <tr><th>Date</th><th>Match</th><th>Bet</th><th>Odds</th><th>Stake</th><th>Status</th><th>P/L</th><th></th></tr>
+                </thead>
+                <tbody id="arch-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'https://script.google.com/macros/s/AKfycby6x4BwG_a3mcOoWxbZSHUVpLuwaFRzLrdC2dWoS53Qi0uSzd_xJ0x5E6NFnZvvh_4U/exec';
+    
+    let state = JSON.parse(localStorage.getItem('ff_punter_v2'));
+
+    window.onload = () => {
+        if (!state || !state.user) {
+            document.getElementById('login-overlay').classList.remove('hidden');
+        } else {
+            updateGreeting();
+            refresh();
+            initLeagues();
+        }
+    };
+
+    function handleLogin() {
+        const name = document.getElementById('user-name-input').value;
+        const bank = parseFloat(document.getElementById('init-bank-input').value);
+        if (!name || isNaN(bank)) return alert("Please enter both name and bankroll.");
+        
+        state = { user: name, bankroll: bank, bets: [] };
+        save();
+        document.getElementById('login-overlay').classList.add('hidden');
+        updateGreeting();
+        refresh();
+        initLeagues();
+    }
+
+    function updateGreeting() {
+        if(!state || !state.user) return;
+        const hour = new Date().getHours();
+        let greet = "Good Evening";
+        if(hour < 12) greet = "Good Morning";
+        else if(hour < 18) greet = "Good Afternoon";
+        document.getElementById('user-greeting').innerHTML = `${greet}, <strong>${state.user}</strong>`;
+    }
+
+    function logout() {
+        if(confirm("Logout and clear data?")) {
+            localStorage.removeItem('ff_punter_v2');
+            location.reload();
+        }
+    }
+
+    function promptBankroll() {
+        const val = prompt("Update Bankroll Total:", state.bankroll);
+        if(val !== null) { state.bankroll = parseFloat(val); save(); refresh(); }
+    }
+
+    async function initLeagues() {
+        try {
+            const res = await fetch(`${API}?action=getLeagues`);
+            const leagues = await res.json();
+            document.getElementById('in-league').innerHTML = '<option value="">Select League</option>' + leagues.map(l => `<option value="${l}">${l}</option>`).join('');
+        } catch(e) { console.error("League sync error."); }
+    }
+
+    async function loadTeams() {
+        const league = document.getElementById('in-league').value;
+        document.getElementById('status-bar').style.display = 'block';
+        const res = await fetch(`${API}?action=updateLeague&league=${encodeURIComponent(league)}`);
+        const data = await res.json();
+        const opts = (t) => t.map(x => `<option value="${x}">${x}</option>`).join('');
+        document.getElementById('in-home').innerHTML = opts(data.home);
+        document.getElementById('in-away').innerHTML = opts(data.away);
+        document.getElementById('status-bar').style.display = 'none';
+    }
+
+    async function runPredictor() {
+        const h = document.getElementById('in-home').value;
+        const a = document.getElementById('in-away').value;
+        document.getElementById('status-bar').style.display = 'block';
+        const res = await fetch(`${API}?action=runPredictor&home=${encodeURIComponent(h)}&away=${encodeURIComponent(a)}`);
+        const data = await res.json();
+        
+        const markets = [
+            { label: h + ' Win', p: data.homeWinProb, x: data.homeWinXOdds },
+            { label: a + ' Win', p: data.awayWinProb, x: data.awayWinXOdds },
+            { label: 'Over 2.5', p: data.over25Prob, x: data.over25XOdds },
+            { label: 'BTTS', p: data.bttsProb, x: data.bttsXOdds }
+        ];
+
+        document.getElementById('match-results').innerHTML = markets.map((m, i) => `
+            <tr>
+                <td style="text-align:left; font-weight:bold">${m.label}</td>
+                <td>${(m.p * 100).toFixed(1)}%</td>
+                <td>${m.x.toFixed(2)}</td>
+                <td><input type="number" id="bk-${i}" step="0.01" style="width:70px" oninput="calcValue(${i}, ${m.x}, ${m.p})"></td>
+                <td id="val-${i}">-</td>
+                <td id="strat-${i}" style="font-size:10px; font-weight:bold;">-</td>
+                <td id="stk-${i}" style="color:var(--brand-yellow); font-weight:bold;">-</td>
+                <td><button onclick="logBet(${i},'${m.label}','${h} v ${a}')" style="background:var(--win-green); border:none; border-radius:4px; cursor:pointer;">+</button></td>
+            </tr>`).join('');
+        document.getElementById('status-bar').style.display = 'none';
+    }
+
+    function calcValue(i, xOdds, prob) {
+        const bookie = parseFloat(document.getElementById('bk-'+i).value);
+        if(!bookie) return;
+        const value = ((bookie / xOdds) - 1) * 100;
+        const valEl = document.getElementById('val-'+i);
+        valEl.innerText = value.toFixed(1) + '%';
+        valEl.className = value > 0 ? 'win-green' : 'loss-red';
+
+        const strat = document.getElementById('strat-'+i);
+        if(value > 31) { strat.innerText = 'SKIP'; strat.className = 'loss-red'; }
+        else if(value > 0) { strat.innerText = 'BET'; strat.className = 'win-green'; }
+        else { strat.innerText = 'NO'; strat.className = ''; }
+
+        const m58 = state.bankroll;
+        const c1 = Math.min(m58 * 0.05, (prob - 0.5) / 8 * m58);
+        const c2 = Math.min(m58 * 0.05, (Math.min(value/10, 3.5) / 3.5) * m58 * 0.05);
+        document.getElementById('stk-'+i).innerText = '$' + Math.max(0, (c1 + c2) / 2).toFixed(2);
+    }
+
+    function logBet(i, label, match) {
+        const stakeStr = document.getElementById('stk-'+i).innerText.replace('$','');
+        const odds = parseFloat(document.getElementById('bk-'+i).value);
+        if(!odds || stakeStr === '-') return;
+        state.bets.push({ id: Date.now(), date: new Date().toDateString(), match, bet: label, odds, stake: parseFloat(stakeStr), status: 'Pending', profit: 0 });
+        save(); refresh(); alert("Logged to Archive");
+    }
+
+    function resolve(id, status) {
+        const b = state.bets.find(x => x.id === id);
+        b.status = status;
+        b.profit = (status === 'Win') ? (b.stake * b.odds) - b.stake : (status === 'Loss' ? -b.stake : 0);
+        save(); refresh();
+    }
+
+    function refresh() {
+        if(!state) return;
+        let p = 0, s = 0, w = 0, d = 0;
+        state.bets.forEach(b => { if(b.status !== 'Pending') { p += b.profit; s += b.stake; d++; if(b.status === 'Win') w++; } });
+        document.getElementById('s-top-bank').innerText = `$${(state.bankroll + p).toFixed(2)}`;
+        document.getElementById('s-prof').innerText = `$${p.toFixed(2)}`;
+        document.getElementById('s-roi').innerText = s > 0 ? ((p/s)*100).toFixed(1) + '%' : '0%';
+        document.getElementById('s-wr').innerText = d > 0 ? ((w/d)*100).toFixed(1) + '%' : '0%';
+        
+        document.getElementById('arch-body').innerHTML = [...state.bets].reverse().map(b => `
+            <tr><td>${b.date}</td><td>${b.match}</td><td>${b.bet}</td><td>${b.odds}</td><td>$${b.stake}</td>
+            <td><select onchange="resolve(${b.id}, this.value)" style="padding:2px;"><option value="Pending" ${b.status==='Pending'?'selected':''}>Pending</option><option value="Win" ${b.status==='Win'?'selected':''}>Win</option><option value="Loss" ${b.status==='Loss'?'selected':''}>Loss</option></select></td>
+            <td class="${b.profit >= 0 ? 'win-green' : 'loss-red'}">${b.status==='Pending'?'-':'$'+b.profit.toFixed(2)}</td>
+            <td><button onclick="delBet(${b.id})" style="background:none; border:none; cursor:pointer;">🗑️</button></td></tr>`).join('');
+        renderCalendar();
+    }
+
+    let calDate = new Date();
+    function renderCalendar() {
+        const body = document.getElementById('calendar-body');
+        if(!body) return;
+        body.innerHTML = '';
+        const m = calDate.getMonth(), y = calDate.getFullYear();
+        document.getElementById('cal-month-title').innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(calDate);
+        const daily = {};
+        state.bets.forEach(b => { if(b.status !== 'Pending') daily[new Date(b.date).toDateString()] = (daily[new Date(b.date).toDateString()] || 0) + b.profit; });
+        ['S','M','T','W','T','F','S'].forEach(d => body.innerHTML += `<div class="cal-day-label">${d}</div>`);
+        for(let i=0; i<new Date(y,m,1).getDay(); i++) body.innerHTML += `<div></div>`;
+        for(let d=1; d<=new Date(y,m+1,0).getDate(); d++) {
+            const dayStr = new Date(y,m,d).toDateString();
+            const prof = daily[dayStr] || 0;
+            const cls = prof > 0 ? 'win-day' : (prof < 0 ? 'loss-day' : '');
+            body.innerHTML += `<div class="cal-cell ${cls}"><span style="font-size:9px; position:absolute; top:2px; left:2px;">${d}</span><span style="font-size:10px; font-weight:bold;">${prof ? '$'+prof.toFixed(0) : ''}</span></div>`;
+        }
+    }
+
+    function tab(id) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        document.getElementById(id+'-page').classList.remove('hidden');
+        document.getElementById('btn-'+id).classList.add('active');
+    }
+
+    function changeMonth(dir) { calDate.setMonth(calDate.getMonth() + dir); renderCalendar(); }
+    function save() { localStorage.setItem('ff_punter_v2', JSON.stringify(state)); }
+    function delBet(id) { if(confirm("Delete?")) { state.bets = state.bets.filter(b => b.id !== id); save(); refresh(); } }
+</script>
+</body>
+</html>
